@@ -3,14 +3,23 @@ import dots from '../dots.svg';
 import trash from '../trash.svg';
 import updateCheckbox, { updateOnload } from './interaction.js';
 
-// selecting the container
+// selecting and creating materials
 const container = document.querySelector('.container');
-
-// selecting the input container
 const inputSection = document.querySelector('.inputSection');
-
-// selecting the input field
 const inputField = document.getElementById('inputField');
+const arrowHolder = document.createElement('img');
+arrowHolder.classList.add('arrow');
+arrowHolder.src = arrow;
+inputSection.append(inputField, arrowHolder);
+let taskHolder = JSON.parse(localStorage.getItem('taskList')) || [];
+const button = document.querySelector('.clearAll');
+const taskSection = document.createElement('section');
+taskSection.classList.add('taskSection');
+container.append(taskSection);
+container.insertBefore(taskSection, button);
+const tasklist = document.createElement('ul');
+tasklist.classList.add('tasklist');
+taskSection.append(tasklist);
 
 // local storage
 const inputStorage = JSON.parse(localStorage.getItem('inputdata')) || {};
@@ -28,57 +37,29 @@ const clearInput = () => {
   localStorage.setItem('inputdata', JSON.stringify(inputStorage));
 };
 
-// attach an event listener to the input field to listen for changes
+//attach event listener for input field.
 inputField.addEventListener('input', inputSave);
-
-// selecting the arrow for entry
-const arrowHolder = document.createElement('img');
-arrowHolder.classList.add('arrow');
-arrowHolder.src = arrow;
-
-inputSection.append(inputField, arrowHolder);
-
-// implementing list functionality
-
-// local storage for array
-let taskHolder = JSON.parse(localStorage.getItem('taskList')) || [];
 
 const bookSave = () => {
   localStorage.setItem('taskList', JSON.stringify(taskHolder));
 };
 
-class Task {
-  constructor(description) {
-    this.index = taskHolder.length;
-    this.description = description;
-    this.completed = false;
-  }
-}
-
 const taskCreator = () => {
-  const newTask = new Task(inputField.value);
+  const newTask = {
+    index: taskHolder.length,
+    description: inputField.value,
+    completed: false,
+  };
   taskHolder.push(newTask);
   inputField.value = '';
 };
-
-// selecting the button
-const button = document.querySelector('.clearAll');
-
-// create the dom elements to support the array
-const taskSection = document.createElement('section');
-taskSection.classList.add('taskSection');
-container.append(taskSection);
-container.insertBefore(taskSection, button);
-const tasklist = document.createElement('ul');
-tasklist.classList.add('tasklist');
-taskSection.append(tasklist);
 
 const addToDom = () => {
   // Clear the list
   tasklist.innerHTML = '';
 
   taskHolder.forEach((instance) => {
-    const { index, description, completed } = instance;
+    const { index, description } = instance;
 
     const taskListItem = document.createElement('li');
     taskListItem.classList.add('listInstance');
@@ -90,68 +71,44 @@ const addToDom = () => {
       <img src=${trash} class='trash' data-index='${index}'>
       `;
     tasklist.append(taskListItem);
-    const listStruc = document.querySelectorAll('.listInstance');
-    listStruc.forEach((inst) => {
-      // edit description
-      const descriptionTexts = inst.querySelectorAll('.descriptionText[data-index]');
-      descriptionTexts.forEach((span) => {
-        span.addEventListener('click', () => {
-          const input = document.createElement('input');
-          input.classList.add('input-2');
-          input.type = 'text';
-          input.value = span.innerText;
 
-          input.addEventListener('blur', () => {
-            span.innerText = input.value;
-            instance.description = input.value;
-            setTimeout(() => {
-              input.replaceWith(span);
-            }, 0);
-            localStorage.setItem('taskList', JSON.stringify(taskHolder));
-          });
+    const descriptionTexts = taskListItem.querySelectorAll('.descriptionText[data-index]');
+    descriptionTexts.forEach((span) => {
+      span.addEventListener('click', () => {
+        const input = document.createElement('input');
+        input.classList.add('input-2');
+        input.type = 'text';
+        input.value = span.innerText;
 
-          input.addEventListener('keydown', (event) => {
-            if (event.key === 'Enter') {
-              span.innerText = input.value;
-              instance.description = input.value;
-              setTimeout(() => {
-                input.replaceWith(span);
-              }, 0);
-            }
-            localStorage.setItem('taskList', JSON.stringify(taskHolder));
-          });
-          span.replaceWith(input);
-          input.focus();
-        });
-        localStorage.setItem('taskList', JSON.stringify(taskHolder));
+        const onBlur = () => {
+          span.innerText = input.value;
+          instance.description = input.value;
+          input.replaceWith(span);
+          localStorage.setItem('taskList', JSON.stringify(taskHolder));
+        };
+
+        const onKeyDown = (event) => {
+          if (event.key === 'Enter') {
+            onBlur();
+          }
+          localStorage.setItem('taskList', JSON.stringify(taskHolder));
+        };
+
+        input.addEventListener('blur', onBlur);
+        input.addEventListener('keydown', onKeyDown);
+
+        span.replaceWith(input);
+        input.focus();
       });
+
+      localStorage.setItem('taskList', JSON.stringify(taskHolder));
     });
-    bookSave();
-    updateOnload();
-    updateCheckbox();
   });
-};
 
-inputField.addEventListener('keydown', (event) => {
-  if (event.key === 'Enter' && !(inputField.value === '')) {
-    taskCreator();
-    addToDom();
-    clearInput();
-  }
-});
-
-arrowHolder.addEventListener('click', () => {
-  if (!(inputField.value === '')) {
-    taskCreator();
-    addToDom();
-    clearInput();
-  }
-});
-
-// render list-section dynamically when page loads
-window.addEventListener('load', () => {
-  addToDom();
-});
+  localStorage.setItem('taskList', JSON.stringify(taskHolder));
+  updateOnload();
+  updateCheckbox();
+}
 
 const listRefresher = () => {
   taskHolder.forEach((item, index) => {
@@ -164,28 +121,17 @@ const handleDeleteClick = (event) => {
   const listItem = event.target.closest('li');
   const listItemIndex = parseInt(listItem.dataset.index, 10);
 
-  let indexInTaskHolder = -1;
-  taskHolder.forEach((task, index) => {
-    if (task.index === listItemIndex) {
-      indexInTaskHolder = index;
-    } else if (index > indexInTaskHolder) {
-      // eslint-disable-next-line no-plusplus
-      task.index--;
-    }
-  });
+  const indexInTaskHolder = taskHolder.findIndex((task) => task.index === listItemIndex);
 
   if (indexInTaskHolder !== -1) {
     taskHolder.splice(indexInTaskHolder, 1);
-    localStorage.setItem('taskList', JSON.stringify(taskHolder));
     listRefresher();
     listItem.remove();
   } else if (indexInTaskHolder === 0) {
-    taskHolder = [];
-    localStorage.setItem('taskList', JSON.stringify(taskHolder));
+    taskHolder.length = 0;
     listRefresher();
     listItem.remove();
   }
-  location.reload();
 };
 
 const handleDotClick = (event) => {
@@ -203,6 +149,42 @@ document.addEventListener('click', (event) => {
     handleDotClick(event);
   } else if (isTrash) {
     handleDeleteClick(event);
-    // listRefresher();
   }
 });
+
+const inputSaveAndClear = () => {
+  inputSave();
+  clearInput();
+};
+
+const handleInputFieldEnter = (event) => {
+  if (event.key === 'Enter' && inputField.value.trim() !== '') {
+    taskCreator();
+    addToDom();
+    inputSaveAndClear();
+  }
+};
+
+const handleArrowHolderClick = () => {
+  if (inputField.value.trim() !== '') {
+    taskCreator();
+    addToDom();
+    inputSaveAndClear();
+  }
+};
+
+inputField.addEventListener('input', inputSave);
+inputField.addEventListener('keydown', handleInputFieldEnter);
+arrowHolder.addEventListener('click', handleArrowHolderClick);
+
+const init = () => {
+  inputField.value = inputStorage.inputField;
+  taskSection.classList.add('taskSection');
+  container.insertBefore(taskSection, button);
+  taskSection.append(tasklist);
+  window.addEventListener('load', addToDom);
+};
+
+init();
+
+
