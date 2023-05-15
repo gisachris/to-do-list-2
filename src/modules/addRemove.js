@@ -11,7 +11,7 @@ const arrowHolder = document.createElement('img');
 arrowHolder.classList.add('arrow');
 arrowHolder.src = arrow;
 inputSection.append(inputField, arrowHolder);
-let taskHolder = JSON.parse(localStorage.getItem('taskList')) || [];
+const taskHolder = JSON.parse(localStorage.getItem('taskList')) || [];
 const button = document.querySelector('.clearAll');
 const taskSection = document.createElement('section');
 taskSection.classList.add('taskSection');
@@ -37,7 +37,7 @@ const clearInput = () => {
   localStorage.setItem('inputdata', JSON.stringify(inputStorage));
 };
 
-//attach event listener for input field.
+// attach event listener for input field.
 inputField.addEventListener('input', inputSave);
 
 const bookSave = () => {
@@ -108,7 +108,7 @@ const addToDom = () => {
   localStorage.setItem('taskList', JSON.stringify(taskHolder));
   updateOnload();
   updateCheckbox();
-}
+};
 
 const listRefresher = () => {
   taskHolder.forEach((item, index) => {
@@ -186,5 +186,3 @@ const init = () => {
 };
 
 init();
-
-
